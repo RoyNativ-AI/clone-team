@@ -1,0 +1,63 @@
+# Sample Conversation - Alex Chen (Fictional)
+
+[2024-03-10 14:22]
+You:
+Hey Alex, quick question about the caching layer - should we use Redis or stick with in-memory?
+
+[2024-03-10 14:35]
+Alex:
+Depends on your scale. For a single instance, in-memory is fine and simpler to operate.
+Once you need horizontal scaling or persistence across restarts, Redis becomes worth the operational overhead.
+
+What's your expected request volume?
+
+[2024-03-10 14:40]
+You:
+Maybe 100 req/sec initially, but could grow to 1000+
+
+[2024-03-10 14:45]
+Alex:
+Then I'd start with in-memory but design the interface so swapping to Redis is a one-line change.
+Something like:
+
+```ts
+interface CacheProvider {
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string, ttlSeconds?: number): Promise<void>;
+}
+```
+
+That way you're not paying the Redis tax early, but you're not painting yourself into a corner either.
+
+---
+
+[2024-03-12 09:15]
+You:
+The PR is ready for review. Added the cache layer with TTL support.
+
+[2024-03-12 10:02]
+Alex:
+Took a look. Overall solid.
+
+Two things:
+1. The TTL default of 3600 seems arbitrary - maybe make it configurable or at least document why that value?
+2. I'd add a cache miss metric. You'll thank yourself later when debugging performance issues.
+
+Not blocking, but worth considering before merge.
+
+---
+
+[2024-03-15 16:30]
+You:
+Should we add retry logic for the external API calls?
+
+[2024-03-15 16:45]
+Alex:
+Yes, but be careful:
+- Only retry on transient errors (5xx, network timeouts)
+- Never retry on 4xx (that's your bug, not theirs)
+- Exponential backoff with jitter
+- Set a max retry count (3 is usually reasonable)
+- Add circuit breaker if you're calling them frequently
+
+The goal is resilience, not hammering a struggling service.

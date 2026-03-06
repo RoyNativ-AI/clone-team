@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.claude/
+.DS_Store
+*.DS_Store
+.env
+.env.*
+conversations/
+personas/
